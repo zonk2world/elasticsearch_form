@@ -1,16 +1,20 @@
 <?php
 require_once 'app/init.php';
 
-if(isset($_GET['q'])) {
+$results = [];
+$main_result = [];
+
+if(isset($_GET['q']) || isset($_GET['graded'])) {
 
   $q = $_GET['q'];
+  $graded = $_GET['graded'];
 
   $query = $es->search([
     'index' => 'card_auctions',
     'body'  => [
       'query' => [
         'match' => [
-          'auction_text' => $q
+          'sku' => $q
         ]
       ]
     ]
@@ -18,6 +22,7 @@ if(isset($_GET['q'])) {
 
   if($query['hits']['total'] >=1 ) {
     $results = $query['hits']['hits'];
+    $main_result = $results[0]['_source'];
   }
 }
 
@@ -72,10 +77,12 @@ if(isset($_GET['q'])) {
     <li role="presentation" class="active"><a href="index.php">Home</a></li>
   </ul>
 
-  <div class="row vertical-center-row">
+  <div class="row vertical-center-row pt-4">
     <div class="col-lg-4 col-lg-offset-4">
       <div class="input-group">
-        <h3>Input search query</h3>
+        <div class="center-block">
+          <h3>Input search query</h3>
+        </div>
       </div>
     </div>
   </div>
@@ -84,7 +91,7 @@ if(isset($_GET['q'])) {
     <div class="row">
       <div class="col-lg-4 col-lg-offset-4">
         <div class="input-group">
-          <input type="text" name="q" placeholder="Search..." class="form-control" />
+          <input type="text" name="q" placeholder="Search ..." class="form-control" /> 
           <span class="input-group-btn">
             <button type="submit" class="btn btn-primary">Search</button>
           </span>

@@ -1,16 +1,20 @@
 <?php
 require_once 'app/init.php';
 
-if(isset($_GET['q'])) {
+$results = [];
+$main_result = [];
+
+if(isset($_GET['q']) || isset($_GET['graded'])) {
 
   $q = $_GET['q'];
+  $graded = $_GET['graded'];
 
   $query = $es->search([
     'index' => 'card_auctions',
     'body'  => [
       'query' => [
         'match' => [
-          'auction_text' => $q
+          'sku' => $q
         ]
       ]
     ]
@@ -18,6 +22,7 @@ if(isset($_GET['q'])) {
 
   if($query['hits']['total'] >=1 ) {
     $results = $query['hits']['hits'];
+    $main_result = $results[0]['_source'];
   }
 }
 
@@ -35,31 +40,13 @@ if(isset($_GET['q'])) {
 
   <link href="//fonts.googleapis.com/css?family=Pattaya|Slabo+27px|Raleway:400,300,600" rel="stylesheet" type="text/css">
   <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/starter-template.css" rel="stylesheet">
+
   <link rel="icon" type="image/png" href="images/favicon.png">
 
-  <script src="js/bootstrap.min.js"></script>
   <script src="js/jquery.min.js"></script>
-
-  <style>
-    h1 {
-      font-family: 'Pattaya', sans-serif;
-      font-size: 59px;
-      position: relative;
-      right: -10px;
-    }
-
-    h3 {
-      font-family: 'Pattaya', sans-serif;
-      font-size: 20px;
-      position: relative;
-      right: -90px;
-    }
-
-    h4 {
-      font-family: 'Slabo', sans-serif;
-      font-size: 30px;
-    }
-  </style>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.min.js"></script>
 
 </head>
 
@@ -72,17 +59,18 @@ if(isset($_GET['q'])) {
   <div class="row vertical-center-row pt-4">
     <div class="col-lg-4 col-lg-offset-4">
       <div class="input-group">
-      <div class="center-block">
-        <h3>Input search query</h3>
+        <div class="center-block">
+          <h3>Input search query</h3>
+        </div>
       </div>
     </div>
   </div>
 
   <form action="results.php" method="get" autocomplete="on">
     <div class="row">
-      <div class="col-lg-4 col-lg-offset-4">
+      <div class="col-md-4 col-md-offset-4">
         <div class="input-group">
-          <input type="text" name="q" placeholder="Search..." class="form-control" /> 
+          <input type="text" name="q" placeholder="Search ..." class="form-control" />
           <span class="input-group-btn">
             <button type="submit" class="btn btn-primary">Search</button>
             <a class="btn btn-danger" href="index.php">Back</a>
@@ -104,15 +92,16 @@ if(isset($_GET['q'])) {
     <div class="row">
       <div class="container">
         <div class="table-responsive">
-          <table class="table table-striped">
+          <table class="table">
             <thead>
               <tr>
-                <th>Record Phase</th>
+                <th></th>
+                <th>SKU</th>
                 <th>Card Name</th>
                 <th>Full Price</th>
+                <th>Total Price</th>
                 <th>Grade</th>
                 <th>Ebay ID</th>
-                <th>Auction Text</th>
               </tr>
             </thead>
             <tbody>
@@ -121,12 +110,15 @@ if(isset($_GET['q'])) {
               foreach ( $results as $r ) {
               ?>
                 <tr>
-                  <td><?php echo $r['_source']['record_phase']; ?></td>
+                  <td>
+                    <img src="<?php echo $r['_source']['picture_url']; ?>" width="50" />
+                  </td>
+                  <td><a href="results.php?q=<?php echo $r['_source']['sku']; ?>&pop=true"><?php echo $r['_source']['sku']; ?></a></td>
                   <td><?php echo $r['_source']['card_title']; ?></td>
                   <td>$ <?php echo $r['_source']['full_price']; ?></td>
+                  <td>$ <?php echo $r['_source']['total_price']; ?></td>
                   <td><?php echo $r['_source']['card_grade']; ?></td>
                   <td><?php echo $r['_source']['auction_id']; ?></td>
-                  <td><?php echo $r['_source']['auction_text']; ?></td>
                 </tr>
               <?php
               }
@@ -152,6 +144,103 @@ if(isset($_GET['q'])) {
 
       <?php
     }
+  ?>
+
+  <?php
+
+  if ( isset($_GET['pop']) && $_GET['pop'] == 'true' ) {
+    $q = $_GET['q'];
+
+  ?>
+    <!-- Modal -->
+    <div id="auction_modal" class="modal fade" role="dialog">
+      <div class="modal-dialog modal-lg">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title"><?php echo $main_result['sku']; ?></h4>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-md-4">
+                <img src="<?php echo $main_result['picture_url']; ?>" class="w-100"></img>
+              </div>
+              <div class="col-md-8">
+                <div class="row">
+                  <div class="col-sm-12">
+                    <h3><?php echo $main_result['card_title']; ?></h3>
+                  </div>
+                </div>
+                <div class="row pt-4">
+                  <div class="col-sm-3">
+                    <div><strong>Full Price</strong></div>
+                    <div>$ <?php echo $main_result['full_price']; ?></div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div><strong>Total Price</strong></div>
+                    <div>$ <?php echo $main_result['total_price']; ?></div>
+                  </div>
+                  <div class="col-sm-6">
+                    <div><strong>Sold Date</strong></div>
+                    <div>$ <?php echo $main_result['auction_sold_date']; ?></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-12">
+                <canvas id="chart_area" width="600" height="400"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      $(document).ready( function() {
+        $('#auction_modal').modal('show');
+
+        var chartCanvas = document.getElementById("chart_area");
+
+        var chartData = {
+          labels: [],
+          datasets: [{
+            label: "Price History",
+            data: [],
+          }]
+        };
+
+        <?php
+          foreach($results as $result){
+        ?>
+          chartData.labels.push("<?php echo $result['_source']['auction_sold_date'] ?>");
+          chartData.datasets[0].data.push("<?php echo $result['_source']['total_price'] ?>");
+        <?php } ?>
+
+        var chartOptions = {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: {
+              boxWidth: 80,
+              fontColor: 'black'
+            }
+          }
+        };
+
+        var lineChart = new Chart(chartCanvas, {
+          type: 'line',
+          data: chartData,
+          options: chartOptions
+        });
+      });
+    </script>
+
+  <?php
+  }
   ?>
 
 </body>
