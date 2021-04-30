@@ -56,17 +56,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
     <li role="presentation"><a href="index.php">Home</a></li>
   </ul>
 
-  <div class="row vertical-center-row pt-4">
-    <div class="col-lg-4 col-lg-offset-4">
-      <div class="input-group">
-        <div class="center-block">
-          <h3>Input search query</h3>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <form action="results.php" method="get" autocomplete="on">
+  <form action="results.php" method="get" autocomplete="on" class="pt-4">
     <div class="row">
       <div class="col-md-4 col-md-offset-4">
         <div class="input-group">
@@ -80,45 +70,20 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
     </div>
   </form>
 
-  <div class="container py-4">
-    <div class="row" style="text-align: center">
-      <h2> Search Results: </h2>
-    </div>
-  </div>
-
   <?php
     if ( isset($results) ) {
   ?>
-    <div class="row">
+    <div class="row pt-4">
       <div class="container">
         <div class="table-responsive">
           <table class="table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>SKU</th>
-                <th>Card Name</th>
-                <th>Full Price</th>
-                <th>Total Price</th>
-                <th>Grade</th>
-                <th>Ebay ID</th>
-              </tr>
-            </thead>
             <tbody>
 
               <?php
               foreach ( $results as $r ) {
               ?>
                 <tr>
-                  <td>
-                    <img src="<?php echo $r['_source']['picture_url']; ?>" width="50" />
-                  </td>
                   <td><a href="results.php?q=<?php echo $r['_source']['sku']; ?>&pop=true"><?php echo $r['_source']['sku']; ?></a></td>
-                  <td><?php echo $r['_source']['card_title']; ?></td>
-                  <td>$ <?php echo $r['_source']['full_price']; ?></td>
-                  <td>$ <?php echo $r['_source']['total_price']; ?></td>
-                  <td><?php echo $r['_source']['card_grade']; ?></td>
-                  <td><?php echo $r['_source']['auction_id']; ?></td>
                 </tr>
               <?php
               }
@@ -134,7 +99,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
     } else {
       ?>
 
-        <div class="row text-center">
+        <div class="row text-center pt-4">
           <div class="container">
             <div class="panel panel-success p-4">
               There are no search results.

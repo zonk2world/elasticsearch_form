@@ -77,16 +77,6 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
     <li role="presentation" class="active"><a href="index.php">Home</a></li>
   </ul>
 
-  <div class="row vertical-center-row pt-4">
-    <div class="col-lg-4 col-lg-offset-4">
-      <div class="input-group">
-        <div class="center-block">
-          <h3>Input search query</h3>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <form action="results.php" method="get" autocomplete="on">
     <div class="row">
       <div class="col-lg-4 col-lg-offset-4">
