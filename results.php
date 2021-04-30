@@ -113,8 +113,37 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
 
   <?php
 
+  $price_results = [];
+
   if ( isset($_GET['pop']) && $_GET['pop'] == 'true' ) {
     $q = $_GET['q'];
+
+    $price_query = $es->search([
+      'index' => 'card_auctions',
+      'body'  => [
+        'query' => [
+          'bool' => [
+            'must' => [
+              'term' => [
+                'sku.keyword' => $q
+              ]
+            ]
+          ]
+        ],
+        'size' => 0,
+        'aggs' => [
+          'price_avg' => [
+            'avg' => [
+              "field" => "total_price"
+            ]
+          ]
+        ]
+      ]
+    ]);
+
+    if($price_query['hits']['total'] >=1 ) {
+      $price_results = $price_query['aggregations']['price_avg'];
+    }
 
   ?>
     <!-- Modal -->
@@ -140,16 +169,8 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
                 </div>
                 <div class="row pt-4">
                   <div class="col-sm-3">
-                    <div><strong>Full Price</strong></div>
-                    <div>$ <?php echo $main_result['full_price']; ?></div>
-                  </div>
-                  <div class="col-sm-3">
-                    <div><strong>Total Price</strong></div>
-                    <div>$ <?php echo $main_result['total_price']; ?></div>
-                  </div>
-                  <div class="col-sm-6">
-                    <div><strong>Sold Date</strong></div>
-                    <div>$ <?php echo $main_result['auction_sold_date']; ?></div>
+                    <div><strong>Avg Price</strong></div>
+                    <div>$<?php echo isset($price_results['value']) ? round($price_results['value'], 2) : ''; ?></div>
                   </div>
                 </div>
               </div>
@@ -179,9 +200,15 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
         };
 
         <?php
+
+          function cmp($a, $b){
+            return strtotime($a['_source']['auction_sold_date']) > strtotime($b['_source']['auction_sold_date']);
+          }
+          usort($results, "cmp");
+
           foreach($results as $result){
         ?>
-          chartData.labels.push("<?php echo $result['_source']['auction_sold_date'] ?>");
+          chartData.labels.push("<?php echo date('Y-m-d', strtotime($result['_source']['auction_sold_date'])) ?>");
           chartData.datasets[0].data.push("<?php echo $result['_source']['total_price'] ?>");
         <?php } ?>
 
