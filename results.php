@@ -16,7 +16,26 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
         'match' => [
           'sku' => $q
         ]
-      ]
+      ],
+      'aggs' => [
+        'dedup' => [
+          'terms' => [
+            'field' => 'sku.keyword'
+          ],
+          'aggs' => [
+            'dedup_docs' => [
+              'top_hits' => [
+                'size' => 1
+              ]
+            ]
+          ]
+        ]
+      ],
+      'collapse' => [
+        'field' => 'sku.keyword'
+      ],
+      'from' => 0,
+      'size' => 30
     ]
   ]);
 
@@ -206,7 +225,10 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
           }
           usort($results, "cmp");
 
-          foreach($results as $result){
+          foreach($results as $result) {
+            // if ( strtotime($result['_source']['auction_sold_date']) < strtotime('-30 days') ) {
+            //   continue;
+            // }
         ?>
           chartData.labels.push("<?php echo date('Y-m-d', strtotime($result['_source']['auction_sold_date'])) ?>");
           chartData.datasets[0].data.push("<?php echo $result['_source']['total_price'] ?>");
