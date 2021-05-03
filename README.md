@@ -1,4 +1,4 @@
-##Example result record
+## Example result record
 
 ```
 {
@@ -42,7 +42,7 @@
 }
 ```
 
-##Example elastic search query
+## Example elastic search query
 
 ```
 {
