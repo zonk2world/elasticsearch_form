@@ -14,7 +14,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
     'body'  => [
       'query' => [
         'match' => [
-          'sku' => $q
+          'specs_player' => $q
         ]
       ],
       'aggs' => [
@@ -102,7 +102,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
               foreach ( $results as $r ) {
               ?>
                 <tr>
-                  <td><a href="results.php?q=<?php echo $r['_source']['sku']; ?>&pop=true"><?php echo $r['_source']['sku']; ?></a></td>
+                  <td><a href="results.php?q=<?php echo $r['_source']['specs_player']; ?>&pop=true"><?php echo $r['_source']['specs_player']; ?></a></td>
                 </tr>
               <?php
               }
@@ -144,7 +144,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
           'bool' => [
             'must' => [
               'term' => [
-                'sku.keyword' => $q
+                'specs_player.keyword' => $q
               ]
             ]
           ]
@@ -173,7 +173,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal">&times;</button>
-            <h4 class="modal-title"><?php echo $main_result['sku']; ?></h4>
+            <h4 class="modal-title"><?php echo $main_result['specs_player']; ?></h4>
           </div>
           <div class="modal-body">
             <div class="row">
