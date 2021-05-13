@@ -223,7 +223,9 @@ if ( isset($_GET['q']) ) {
           datasets: [{
             label: "Price History",
             data: [],
-          }]
+            backgroundColor: ['#ff6384'],
+            borderColor: ['#ff6384']
+          }],
         };
 
         <?php
@@ -232,13 +234,43 @@ if ( isset($_GET['q']) ) {
             return strtotime($a['key_as_string']) > strtotime($b['key_as_string']);
           }
           usort($price_results, "cmp");
-
+          $grade_buckets_values = [];
+          $buckets_index = 0;
           foreach($price_results as $result) {
             $grade_buckets = $result['grades']['buckets'];
+
+            foreach ($grade_buckets as $grade_bucket) {
+              if(isset($grade_bucket['key']) && $grade_bucket['key'] != '' && $grade_bucket['key'] != 'None'){
+                if(!isset($grade_buckets_values[$grade_bucket['key']]))
+                  $grade_buckets_values[$grade_bucket['key']] = [];
+                $grade_buckets_values[$grade_bucket['key']][$buckets_index ++] = $grade_bucket['price_avg']['value'];
+              }
+            }
         ?>
           chartData.labels.push("<?php echo date('Y-m-d', strtotime($result['key_as_string'])) ?>");
           chartData.datasets[0].data.push("<?php echo $result['price_avg']['value'] ?>");
         <?php } ?>
+
+        <?php
+          $index = 1;
+          foreach ($grade_buckets_values as $key => $grade_buckets_value) {
+              $print_values = [];
+              for($i = 0; $i < $buckets_index; $i ++){
+                if(!isset($grade_buckets_value[$i]))
+                  $print_values[] = 0;
+                else
+                  $print_values[] = $grade_buckets_value[$i];
+              }
+          ?>
+            chartData.datasets[<?php echo $index ?>] = {};
+            chartData.datasets[<?php echo $index ?>].label = "Grade - <?php echo $key ?>";
+            chartData.datasets[<?php echo $index ?>].data = JSON.parse('<?php echo json_encode($print_values) ?>');
+            var color = Math.floor(Math.random()*16777215).toString(16);
+            chartData.datasets[<?php echo $index ?>].backgroundColor = '#' + color;
+            chartData.datasets[<?php echo $index ?>].borderColor = '#' + color;
+          <?php
+          $index ++;
+          } ?>
 
         var chartOptions = {
           legend: {
