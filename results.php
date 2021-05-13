@@ -4,42 +4,24 @@ require_once 'app/init.php';
 $results = [];
 $main_result = [];
 
-if(isset($_GET['q']) || isset($_GET['graded'])) {
+if ( isset($_GET['q']) ) {
 
   $q = $_GET['q'];
-  $graded = $_GET['graded'];
 
   $query = $es->search([
-    'index' => 'card_auctions',
+    'index' => 'skulib',
     'body'  => [
       'query' => [
         'match' => [
           'sku' => $q
         ]
       ],
-      'aggs' => [
-        'dedup' => [
-          'terms' => [
-            'field' => 'sku.keyword'
-          ],
-          'aggs' => [
-            'dedup_docs' => [
-              'top_hits' => [
-                'size' => 1
-              ]
-            ]
-          ]
-        ]
-      ],
-      'collapse' => [
-        'field' => 'sku.keyword'
-      ],
       'from' => 0,
       'size' => 30
     ]
   ]);
 
-  if($query['hits']['total'] >=1 ) {
+  if($query['hits']['total']['value'] >=1 ) {
     $results = $query['hits']['hits'];
     $main_result = $results[0]['_source'];
   }
@@ -132,6 +114,7 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
 
   <?php
 
+  $auction_result = [];
   $price_results = [];
 
   if ( isset($_GET['pop']) && $_GET['pop'] == 'true' ) {
@@ -143,26 +126,48 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
         'query' => [
           'bool' => [
             'must' => [
-              'term' => [
-                'sku.keyword' => $q
+              [
+                'term' => [
+                  'sku.keyword' => 'Major League Bowman 2018 Ronald Acuna Jr. Atlanta Braves Rookie'
+                ]
+              ],
+              [
+                'regexp' => [ 'sku' => '.+' ]
+              ],
+              [
+                'exists' => [ 'field' => 'sold_date' ]
               ]
             ]
           ]
         ],
-        'size' => 0,
+        'size' => 1,
         'aggs' => [
-          'price_avg' => [
-            'avg' => [
-              "field" => "total_price"
+          'sales_over_time' => [
+            'date_histogram' => [
+              'field' => 'sold_date',
+              'calendar_interval' => 'week',
+              'min_doc_count' => 2
+            ],
+            'aggs' => [
+              'price_avg' => [ 'avg' => [ 'field' => 'total_price' ] ],
+              'grades' => [
+                'terms' => [ 'field' => 'card_grade.keyword' ],
+                'aggs' => [
+                  'price_avg' => [ 'avg' => [ 'field' => 'total_price' ] ]
+                ]
+              ]
             ]
           ]
         ]
       ]
     ]);
 
-    if($price_query['hits']['total'] >=1 ) {
-      $price_results = $price_query['aggregations']['price_avg'];
+    if($price_query['hits']['total']['value'] >=1 ) {
+      $auction_result = $price_query['hits']['hits'][0]['_source'];
     }
+
+    $price_results = $price_query['aggregations']['sales_over_time']['buckets'];
+
 
   ?>
     <!-- Modal -->
@@ -173,23 +178,26 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal">&times;</button>
-            <h4 class="modal-title"><?php echo $main_result['sku']; ?></h4>
+            <h4 class="modal-title"><?php echo $auction_result['sku']; ?></h4>
           </div>
           <div class="modal-body">
             <div class="row">
               <div class="col-md-4">
-                <img src="<?php echo $main_result['picture_url']; ?>" class="w-100"></img>
+                <img src="<?php echo $auction_result['picture_url']; ?>" class="w-100"></img>
               </div>
               <div class="col-md-8">
                 <div class="row">
-                  <div class="col-sm-12">
-                    <h3><?php echo $main_result['card_title']; ?></h3>
-                  </div>
-                </div>
-                <div class="row pt-4">
                   <div class="col-sm-3">
-                    <div><strong>Avg Price</strong></div>
-                    <div>$<?php echo isset($price_results['value']) ? round($price_results['value'], 2) : ''; ?></div>
+                    <div><strong>Player</strong></div>
+                    <div><?php echo $auction_result['specs_player']; ?></div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div><strong>Team</strong></div>
+                    <div><?php echo $auction_result['specs_team']; ?></div>
+                  </div>
+                  <div class="col-sm-3">
+                    <div><strong>Attributes</strong></div>
+                    <div><?php echo $auction_result['specs_card_attribs']; ?></div>
                   </div>
                 </div>
               </div>
@@ -220,18 +228,16 @@ if(isset($_GET['q']) || isset($_GET['graded'])) {
 
         <?php
 
-          function cmp($a, $b){
-            return strtotime($a['_source']['auction_sold_date']) > strtotime($b['_source']['auction_sold_date']);
+          function cmp($a, $b) {
+            return strtotime($a['key_as_string']) > strtotime($b['key_as_string']);
           }
-          usort($results, "cmp");
+          usort($price_results, "cmp");
 
-          foreach($results as $result) {
-            // if ( strtotime($result['_source']['auction_sold_date']) < strtotime('-30 days') ) {
-            //   continue;
-            // }
+          foreach($price_results as $result) {
+            $grade_buckets = $result['grades']['buckets'];
         ?>
-          chartData.labels.push("<?php echo date('Y-m-d', strtotime($result['_source']['auction_sold_date'])) ?>");
-          chartData.datasets[0].data.push("<?php echo $result['_source']['total_price'] ?>");
+          chartData.labels.push("<?php echo date('Y-m-d', strtotime($result['key_as_string'])) ?>");
+          chartData.datasets[0].data.push("<?php echo $result['price_avg']['value'] ?>");
         <?php } ?>
 
         var chartOptions = {
