@@ -128,7 +128,7 @@ if ( isset($_GET['q']) ) {
             'must' => [
               [
                 'term' => [
-                  'sku.keyword' => 'Major League Bowman 2018 Ronald Acuna Jr. Atlanta Braves Rookie'
+                  'sku.keyword' => $q
                 ]
               ],
               [
