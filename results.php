@@ -236,6 +236,7 @@ if ( isset($_GET['q']) ) {
           usort($price_results, "cmp");
           $grade_buckets_values = [];
           $buckets_index = 0;
+          $date_array = [];
           foreach($price_results as $result) {
             $grade_buckets = $result['grades']['buckets'];
 
@@ -243,23 +244,39 @@ if ( isset($_GET['q']) ) {
               if(isset($grade_bucket['key']) && $grade_bucket['key'] != '' && $grade_bucket['key'] != 'None'){
                 if(!isset($grade_buckets_values[$grade_bucket['key']]))
                   $grade_buckets_values[$grade_bucket['key']] = [];
-                $grade_buckets_values[$grade_bucket['key']][$buckets_index ++] = $grade_bucket['price_avg']['value'];
+                $grade_buckets_values[$grade_bucket['key']][$result['key_as_string']] = $grade_bucket['price_avg']['value'];
               }
             }
+            $date_array[] = $result['key_as_string'];
+
         ?>
           chartData.labels.push("<?php echo date('Y-m-d', strtotime($result['key_as_string'])) ?>");
           chartData.datasets[0].data.push("<?php echo $result['price_avg']['value'] ?>");
         <?php } ?>
 
         <?php
+          
           $index = 1;
           foreach ($grade_buckets_values as $key => $grade_buckets_value) {
               $print_values = [];
-              for($i = 0; $i < $buckets_index; $i ++){
-                if(!isset($grade_buckets_value[$i]))
-                  $print_values[] = 0;
+              $total_value = 0;
+              $total_count = 0;
+              foreach($date_array as $date){
+                if(!isset($grade_buckets_value[$date]))
+                  $print_values[] = null;
+                else{
+                  $print_values[] = $grade_buckets_value[$date];
+                  $total_value += $grade_buckets_value[$date];
+                  $total_count ++;
+                }
+              }
+              $average_value = $total_value / $total_count;
+              $average_values = [];
+              for($i = 0; $i < count($print_values); $i ++){
+                if($i == 0 || $i == count($print_values) - 1)
+                  $average_values[] = $average_value;
                 else
-                  $print_values[] = $grade_buckets_value[$i];
+                  $average_values[] = null;
               }
           ?>
             chartData.datasets[<?php echo $index ?>] = {};
@@ -268,8 +285,14 @@ if ( isset($_GET['q']) ) {
             var color = Math.floor(Math.random()*16777215).toString(16);
             chartData.datasets[<?php echo $index ?>].backgroundColor = '#' + color;
             chartData.datasets[<?php echo $index ?>].borderColor = '#' + color;
+
+            chartData.datasets[<?php echo $index+1 ?>] = {};
+            chartData.datasets[<?php echo $index+1 ?>].label = "Average Grade - <?php echo $key ?>";
+            chartData.datasets[<?php echo $index+1 ?>].data = JSON.parse('<?php echo json_encode($average_values) ?>');
+            chartData.datasets[<?php echo $index+1 ?>].backgroundColor = '#' + color;
+            chartData.datasets[<?php echo $index+1 ?>].borderColor = '#' + color;
           <?php
-          $index ++;
+          $index += 2;
           } ?>
 
         var chartOptions = {
@@ -280,7 +303,8 @@ if ( isset($_GET['q']) ) {
               boxWidth: 80,
               fontColor: 'black'
             }
-          }
+          },
+          spanGaps: true
         };
 
         var lineChart = new Chart(chartCanvas, {
