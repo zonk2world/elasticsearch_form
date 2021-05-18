@@ -157,14 +157,18 @@ if ( isset($_GET['q']) ) {
 
     <script type="text/javascript">
       $(document).ready( function() {
+        var lineChart;
 
         function dateformat(date) {
           return date.split('T')[0];
         }
 
-        $('.modal_buttons').click(function(e){
-
+        $('.modal_buttons').click(function(e) {
           e.preventDefault();
+
+          if ( lineChart )
+            lineChart.destroy();
+
           link = $(this).attr('href');
           $.ajax({
             url: link,
@@ -200,6 +204,7 @@ if ( isset($_GET['q']) ) {
               price_results.sort(function(a,b){
                 return Date.parse(a['key_as_string']) > Date.parse(b['key_as_string']);
               });
+
               var grade_buckets_values = {};
               var buckets_index = 0;
               var date_array = [];
@@ -274,7 +279,7 @@ if ( isset($_GET['q']) ) {
                 spanGaps: true
               };
 
-              var lineChart = new Chart(chartCanvas, {
+              lineChart = new Chart(chartCanvas, {
                 type: 'line',
                 data: chartData,
                 options: chartOptions
@@ -284,10 +289,8 @@ if ( isset($_GET['q']) ) {
             }
           })
 
-          
         });
 
-        
       });
     </script>
 
